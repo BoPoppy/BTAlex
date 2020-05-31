@@ -3,6 +3,12 @@ if (process.env.NODE_ENV !== 'production'){
 };
 const express = require('express');
 const app = express();
+const flash = require('connect-flash');
+const session = require('express-session');
+const passport = require('passport')
+
+//Passport config
+require('./config/passport')(passport);
 
 const expressLayouts = require('express-ejs-layouts');
 
@@ -23,11 +29,39 @@ mongoose.connect(db, { useCreateIndex: true, useUnifiedTopology: true,useNewUrlP
 app.set('layout', 'layouts/layout');
 app.use(expressLayouts);
 
+//Bodyparser
+app.use(express.urlencoded({ extended: false}));
+
+//Express session 
+app.use(session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true
+}));
+
+//Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
+//Connect flash
+app.use(flash());
+
+//Global vars
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    next();
+})
+
 app.listen(process.env.PORT || 3000, function(){
     console.log('Server start on port 3000');
 });
 
 app.use(express.static('public'));
+
+//Routes
 app.use('/', indexRouter);
+app.use('/users', require('./routes/users'));
 
 
